@@ -1,3 +1,8 @@
+# These are some examples of commonly ignored file patterns.
+# You should customize this list as applicable to your project.
+# Learn more about .gitignore:
+#     https://www.atlassian.com/git/tutorials/saving-changes/gitignore
+
 # Dependencies
 node_modules/
 vendor/
@@ -12,6 +17,7 @@ bower_components/
 # Build outputs
 dist/
 build/
+target/
 *.log
 *.pid
 *.seed
@@ -41,6 +47,7 @@ Thumbs.db
 coverage/
 .nyc_output/
 *.lcov
+TEST*.xml
 
 # Temporary files
 tmp/
@@ -57,5 +64,23 @@ venv/
 env/
 ENV/
 
-# Note: .cursor/ directory is intentionally tracked, not ignored
+# Compiled Java class files
+*.class
 
+# Package files
+*.jar
+*.war
+
+# Applications
+*.app
+*.exe
+
+# Large media files
+*.mp4
+*.tiff
+*.avi
+*.flv
+*.mov
+*.wmv
+
+# Note: .cursor/ directory is intentionally tracked, not ignored
