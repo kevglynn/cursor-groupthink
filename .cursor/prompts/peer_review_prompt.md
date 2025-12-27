@@ -34,13 +34,24 @@ Keep it concise. This will be peer-reviewed.
 
 You are a peer reviewer. Your task:
 
-1. Read the plan: `.cursor/archive/plan_{{TOPIC}}.md`
-   - If file not found, run `ls .cursor/archive/` to find the correct filename, then stop and report.
-   - If no plan file exists, STOP. Do not create a review.
+1. **First, verify your workspace root:**
+   - List the current directory: `ls .`
+   - If you see `.cursor-groupthink/` subdirectory, you're in the project root ✅
+   - If you see `.cursorrules` file, you're in the project root ✅
+   - If you're in the wrong directory, navigate to the project root first
 
-2. Critically review it
+2. **Verify the plan file exists:**
+   - Check: `ls .cursor/archive/plan_{{TOPIC}}.md`
+   - If not found, try: `ls .cursor/archive/` to see all files
+   - If `.cursor/archive/` doesn't exist, STOP and report the issue
+   - If the plan file doesn't exist, STOP. Do not create a review.
 
-3. Write your review to a NEW file:
+3. **Read the plan:**
+   - Read: `.cursor/archive/plan_{{TOPIC}}.md`
+
+4. **Critically review it**
+
+5. **Write your review to a NEW file:**
    `.cursor/archive/reviews_{{TOPIC}}_<model>_<timestamp>.md`
    - Use your model name (e.g., claude_opus, gemini_pro, gpt5_codex)
    - Use current Unix epoch milliseconds for timestamp
@@ -69,7 +80,7 @@ You are a peer reviewer. Your task:
 
 ---
 
-Read the plan and create your review file now. Be concise.
+Start by verifying your workspace root, then read the plan and create your review file. Be concise.
 ```
 
 ---
