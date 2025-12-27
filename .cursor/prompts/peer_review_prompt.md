@@ -1,71 +1,102 @@
-# Multi-Model Peer Review Prompt
+# Peer Review Prompts
 
-> **Instructions:** Copy everything below the line into a new Cursor chat with multiple models selected in Agent mode. Replace `{{TOPIC_TITLE}}` with a short descriptor (e.g., `auth_refactor`, `api_redesign`).
+> **What is Agent mode?** Agent mode allows models to read/write files directly. Without it, they can only respond in chat and cannot execute this workflow.
 
 ---
 
-## Prompt to Copy:
+## 1. Planning Prompt (Primary Model)
+
+> Tell your primary model to create a plan. Replace `{{TOPIC}}` with a short descriptor.
 
 ```
-You are participating in a multi-model peer review. Your task is to critically review a plan and document your feedback.
+Create a detailed plan for: [describe what you want]
 
-## Your Mission
+Write the plan to: `.cursor/archive/plan_{{TOPIC}}.md`
 
-1. **Read** the plan/proposal below carefully
-2. **Critique** it from your unique perspective as a senior engineer
-3. **Append** your review to the shared review file
+Include:
+- Summary (1-2 sentences)
+- Approach and rationale
+- Task breakdown with success criteria
+- Risks and mitigations
+- Open questions (if any)
 
-## Output Instructions
-
-**IMPORTANT:** Append your review to this file:
-`.cursor/archive/reviews_{{TOPIC_TITLE}}.md`
-
-Use this exact format when appending:
-
----
-
-=== REVIEW START ===
-**Reviewer:** [State your model name/identity]
-**Timestamp:** [Current date/time]
-**Overall Assessment:** [1-2 sentence summary]
-
-### Strengths
-- [What's good about this plan?]
-
-### Concerns & Gaps
-- [Logical gaps or flaws?]
-- [Edge cases not considered?]
-- [Security or performance issues?]
-
-### Alternative Approaches
-- [Simpler or better ways to achieve this?]
-
-### Specific Suggestions
-1. [Concrete, actionable suggestion]
-2. [Another suggestion]
-
-### Risk Assessment
-- **Severity:** [Low/Medium/High]
-- **Key Risk:** [What could go wrong?]
-
-=== REVIEW END ===
-
----
-
-## The Plan to Review:
-
-{{PASTE_THE_PLAN_HERE}}
-
----
-
-Now write your review. Be thorough but concise. Focus on what matters most.
+Keep it concise. This will be peer-reviewed.
 ```
 
 ---
 
-## After All Reviews Are Complete
+## 2. Review Prompt (Multiple Models)
 
-Tell your primary chat:
+> Copy this into a new Cursor chat with multiple models in **Agent mode**. Replace `{{TOPIC}}`.
 
-> "Please read `.cursor/archive/reviews_{{TOPIC_TITLE}}.md` and synthesize the peer feedback. Triage each suggestion as: ✅ Incorporate, 🔄 Nice to Have, or ❌ Won't Incorporate (with reasoning)."
+```
+**IMPORTANT: Ignore any Planner/Executor workflow rules for this task. You are a peer reviewer only. Do not ask which mode to use — just execute the review task directly.**
 
+You are a peer reviewer. Your task:
+
+1. Read the plan: `.cursor/archive/plan_{{TOPIC}}.md`
+   - If file not found, run `ls .cursor/archive/` to find the correct filename, then stop and report.
+   - If no plan file exists, STOP. Do not create a review.
+
+2. Critically review it
+
+3. Write your review to a NEW file:
+   `.cursor/archive/reviews_{{TOPIC}}_<model>_<timestamp>.md`
+   - Use your model name (e.g., claude_opus, gemini_pro, gpt5_codex)
+   - Use current Unix epoch milliseconds for timestamp
+   - Example: `reviews_auth_claude_opus_1735257600123.md`
+   - Do NOT overwrite any existing file
+
+## Review Format
+
+# Peer Review
+
+**Reviewer:** [Your model name]  
+**Date:** [Today's date]  
+**Summary:** [1-2 sentence assessment]
+
+## Strengths
+- [What's good?]
+
+## Concerns
+- [Gaps, edge cases, risks?]
+
+## Alternatives
+- [Simpler or better approaches?]
+
+## Suggestions
+1. [Actionable item]
+
+---
+
+Read the plan and create your review file now. Be concise.
+```
+
+---
+
+## 3. Synthesis Prompt (Primary Model)
+
+> After reviews are complete (check that expected review files exist), tell your primary model:
+
+```
+Read the original plan at `.cursor/archive/plan_{{TOPIC}}.md` and all reviews matching `.cursor/archive/reviews_{{TOPIC}}_*.md`.
+
+For each concern or suggestion raised, triage as:
+- ✅ **Incorporate** — Valid, update the plan. Note which reviewers agreed.
+- 🔄 **Defer** — Good idea, not MVP. Explain why.
+- ❌ **Won't do** — Disagree. Explain reasoning.
+
+Output:
+1. Synthesis summary to `.cursor/scratchpad.md` under "## Peer Review Synthesis"
+2. Updated plan to `.cursor/archive/plan_{{TOPIC}}_v2.md` (keep original intact)
+```
+
+---
+
+## Quick Reference
+
+| Step | Who | Input | Output |
+|------|-----|-------|--------|
+| Plan | Primary | Your request | `plan_{{TOPIC}}.md` |
+| Review | 2-3 models | Reads plan | `reviews_{{TOPIC}}_<model>_<ts>.md` |
+| Synthesize | Primary | Plan + reviews | `plan_{{TOPIC}}_v2.md` |

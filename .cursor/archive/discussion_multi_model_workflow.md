@@ -62,40 +62,46 @@ In Cursor's multi-model agent mode, all models receive the same prompt simultane
 | **Random hash suffix** | Each model writes to `review_<topic>_<random>.md` | Guaranteed unique | Lose track of which model wrote what |
 | **Single file with sections** | All models append to ONE file with marked sections | Zero collision; easy synthesis | Potential race conditions on append |
 
-### Decision: Single File with Sections
+### Decision: Single File with Sections ❌ SUPERSEDED
 
-We chose **Option 4: Single file with sections** because:
+> **Update (2025-12-26):** This decision was proven wrong. See [Outcome](#outcome) below. We now use **timestamp-based unique filenames**.
 
-1. **Zero collision risk** — All models write to the same file
-2. **All reviews in one place** — Easy to read and synthesize
-3. **Model identity in content** — Each model self-identifies within their section, not in filename
-4. **Append operations are safer** — Even with race conditions, markdown sections are self-contained
+~~We chose **Option 4: Single file with sections** because:~~
+1. ~~Zero collision risk~~
+2. ~~All reviews in one place~~
+3. ~~Model identity in content~~
+4. ~~Append operations are safer~~
 
-### Format Chosen
+**What actually happened:** All models writing concurrently overwrote each other. Only one review survived.
 
-```markdown
-=== REVIEW START ===
-**Reviewer:** [Model self-identifies here]
-**Timestamp:** [Auto-generated]
-... structured critique ...
-=== REVIEW END ===
-```
+### Current Decision: Model Name + Timestamp Filenames ✅
+
+Each model writes to: `reviews_<topic>_<model>_<unix_epoch_ms>.md`
+
+Example: `reviews_auth_claude_opus_1735257600123.md`
+
+- **Zero collision** — Model name + timestamp guarantees uniqueness even within same millisecond
+- **Model identity in filename AND content** — Belt and suspenders
+- **No overwrite instruction** — Prompt explicitly says "do NOT overwrite"
+- **Versioned synthesis** — Creates `plan_<topic>_v2.md`, keeps original intact
 
 ---
 
 ## Open Questions for Peer Review
 
-1. **Is single-file append actually safe in Cursor's agent mode?** What happens if two models try to append simultaneously?
+> **Status:** Most questions resolved through testing. See [Outcome](#outcome).
 
-2. **Should we use a more structured format?** (e.g., JSON, YAML) for easier programmatic parsing during synthesis?
+1. ~~**Is single-file append actually safe?**~~ → **No.** Concurrent writes overwrite. Use unique filenames.
 
-3. **How do we signal completion?** How does the user know all models have finished their reviews?
+2. ~~**Structured format (JSON/YAML)?**~~ → **Deferred.** Markdown is human-readable; automate later if needed.
 
-4. **Is there a better orchestration approach?** Should we use separate chat windows instead of multi-model mode for more control?
+3. ~~**Completion signaling?**~~ → **Manual check.** Count review files before synthesis. Simple enough for MVP.
 
-5. **What's the right number of reviewers?** Is 3 optimal, or would 2 or 4 be better?
+4. ~~**Separate chat windows vs multi-model?**~~ → **Multi-model works** with unique filenames.
 
-6. **Should reviews be anonymous?** Would removing model identity reduce bias in synthesis?
+5. **Right number of reviewers?** → 2-3 seems optimal. More adds noise, fewer loses diversity.
+
+6. ~~**Anonymous reviews?**~~ → **No.** Model identity helps understand biases during synthesis.
 
 ---
 
@@ -103,12 +109,14 @@ We chose **Option 4: Single file with sections** because:
 
 ```
 .cursor/
-├── scratchpad.md                           # Living project plan (Planner/Executor)
+├── scratchpad.md                              # Living project plan (Planner/Executor)
 ├── prompts/
-│   └── peer_review_prompt.md               # Template for peer review requests
+│   └── peer_review_prompt.md                  # All prompts (plan, review, synthesize)
 └── archive/
-    ├── reviews_<topic>.md                  # Combined reviews for a topic
-    └── discussion_<topic>.md               # Design discussions (like this one)
+    ├── plan_<topic>.md                        # Original plan
+    ├── plan_<topic>_v2.md                     # Updated plan after synthesis
+    ├── reviews_<topic>_<model>_<ts>.md        # Individual reviews
+    └── discussion_<topic>.md                  # Design discussions
 ```
 
 ---
@@ -128,4 +136,38 @@ Append your review using the standard format below.
 
 === REVIEWS START BELOW THIS LINE ===
 
+---
+
+## Outcome
+
+**Test Date:** 2025-12-26
+
+### What Happened
+
+We tested the single-file append approach with 4 models (Opus 4.5, GPT-5.1 Codex, Gemini 3 Pro, Sonnet 4.5). All four correctly identified the race condition risk in their reviews — and then **fell victim to it**. Each model's write overwrote the previous, leaving an empty file.
+
+### Verdict
+
+❌ **Single-file append does not work** with concurrent agent writes.
+
+✅ **Solution:** Timestamp-based filenames (`reviews_<topic>_<unix_epoch_ms>.md`). Each model writes to a unique file. Model identity stays in content header.
+
+> **Why timestamp, not random hash?** LLMs are deterministic — they generate predictable "random" strings (like `a1b2c3`). Timestamps are guaranteed unique. Feedback from Gemini, Sonnet, and GPT all flagged this.
+
+### Feedback Incorporated
+
+| Change | Source |
+|--------|--------|
+| Switch to unique filenames (now: model + timestamp) | All 4 models |
+| Add "when to use" guidance | Sonnet |
+| Keep model ID in content, not filename | Opus |
+
+### Feedback Deferred
+
+- Sequential reviews (loses parallelism)
+- Structured data format (JSON/YAML)
+- Role-based reviewer specialization
+- Cost/time tracking
+
+See updated prompt: [peer_review_prompt.md](../prompts/peer_review_prompt.md)
 

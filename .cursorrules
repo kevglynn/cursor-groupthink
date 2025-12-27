@@ -1,0 +1,34 @@
+# Peer Review Workflow Rules
+# Version: 1.0
+
+This project uses a multi-model peer review workflow to stress-test plans before execution.
+
+## File Conventions
+
+- **Plans:** `.cursor/archive/plan_<topic>.md`
+- **Reviews:** `.cursor/archive/reviews_<topic>_<model>_<timestamp>.md`
+- **Updated plans:** `.cursor/archive/plan_<topic>_v2.md`
+
+## Workflow
+
+1. **Plan** — Primary model creates a plan in `.cursor/archive/plan_<topic>.md`
+2. **Review** — User triggers peer review via multi-model chat (see `.cursor/prompts/peer_review_prompt.md`)
+3. **Synthesize** — User tells primary model to read `reviews_<topic>_*.md` files and triage feedback
+4. **Execute** — Implement the refined plan
+
+## When to Peer Review
+
+- ✅ **YES:** High-risk changes, architectural decisions, uncertainty about approach
+- ❌ **NO:** Bug fixes, styling tweaks, simple CRUD operations
+
+## Prompts
+
+All workflow prompts are in `.cursor/prompts/peer_review_prompt.md`:
+- Planning prompt (creates plan file)
+- Review prompt (for multi-model reviewers)
+- Synthesis prompt (triages feedback)
+
+## Compatibility with Planner/Executor
+
+This workflow coexists with Planner/Executor rules. The review prompt explicitly tells reviewer models to bypass Planner/Executor mode selection and execute the review directly.
+
