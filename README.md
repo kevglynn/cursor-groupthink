@@ -40,7 +40,22 @@ cd /path/to/new-project
 setup.sh .
 ```
 
-### Option 3: Manual Copy
+### Option 3: Git Submodule (Recommended for Multiple Projects)
+
+Use this approach if you want to keep the workflow in sync across multiple projects:
+
+```bash
+# Add as submodule
+git submodule add https://github.com/your-username/cursor-groupthink.git .cursor-groupthink
+git submodule update --init --recursive
+
+# Run the submodule setup script
+.cursor-groupthink/setup-submodule.sh
+```
+
+This creates symlinks so updates to the workflow automatically propagate. See [`SUBMODULE_SETUP.md`](SUBMODULE_SETUP.md) for details.
+
+### Option 4: Manual Copy
 
 ```bash
 cp -r /path/to/cursor-groupthink/.cursor /path/to/new-project/
@@ -60,7 +75,9 @@ You should see **"Peer Review Workflow Rules"**.
 
 | Path | Purpose |
 |------|---------|
-| [`setup.sh`](setup.sh) | One-command setup for new projects |
+| [`setup.sh`](setup.sh) | One-command setup for new projects (copies files) |
+| [`setup-submodule.sh`](setup-submodule.sh) | Setup script for git submodule usage (creates symlinks) |
+| [`SUBMODULE_SETUP.md`](SUBMODULE_SETUP.md) | Detailed guide for submodule setup |
 | [`.cursorrules`](.cursorrules) | Project rules (auto-loaded by Cursor) |
 | [`.cursor/prompts/peer_review_prompt.md`](.cursor/prompts/peer_review_prompt.md) | All prompts (plan, review, synthesize) |
 | `.cursor/archive/plan_<topic>.md` | Original plan |
